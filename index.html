@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Generador de Certificado Médico</title>
+    <style>
+        :root {
+            --corp-blue: #002B49;
+            --corp-gray: #546e7a;
+            --status-green: #1b5e20;
+            --status-red: #b71c1c;
+            --bg-light: #f5f7fa;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #eceff1;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           LAYOUT PRINCIPAL
+        ═══════════════════════════════════════════════════════════════ */
+        .app-container {
+            display: flex;
+            gap: 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           PANEL DE CAPTURA (IZQUIERDA)
+        ═══════════════════════════════════════════════════════════════ */
+        .form-panel {
+            width: 420px;
+            flex-shrink: 0;
+        }
+
+        .form-panel h1 {
+            color: var(--corp-blue);
+            font-size: 20px;
+            margin: 0 0 5px 0;
+        }
+
+        .form-panel .subtitle {
+            color: #666;
+            font-size: 12px;
+            margin-bottom: 20px;
+        }
+
+        .form-section {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .form-section h2 {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: white;
+            background: var(--corp-blue);
+            margin: -15px -15px 15px -15px;
+            padding: 8px 15px;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .form-group {
+            flex: 1;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 11px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 3px;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 8px 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--corp-blue);
+        }
+
+        .form-group.full { flex: 100%; }
+
+        .calculated {
+            background: #f5f5f5 !important;
+            color: #666;
+        }
+
+        /* Botón grande */
+        .btn-print {
+            width: 100%;
+            padding: 18px;
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+            background: var(--status-green);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background 0.2s;
+        }
+
+        .btn-print:hover {
+            background: #2e7d32;
+        }
+
+        .btn-print:active {
+            transform: scale(0.98);
+        }
+
+        .help-text {
+            text-align: center;
+            font-size: 11px;
+            color: #888;
+            margin-top: 8px;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           VISTA PREVIA DEL CERTIFICADO (DERECHA)
+        ═══════════════════════════════════════════════════════════════ */
+        .preview-panel {
+            flex: 1;
+        }
+
+        .preview-label {
+            font-size: 12px;
+            color: #888;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .certificate {
+            width: 216mm;
+            min-height: 279mm;
+            background: white;
+            padding: 15mm;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+        }
+
+        /* --- Estilos del certificado --- */
+        .cert-header {
+            border-bottom: 3px solid var(--corp-blue);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .cert-brand h1 {
+            margin: 0;
+            color: var(--corp-blue);
+            font-size: 22px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .cert-brand p {
+            margin: 3px 0 0 0;
+            font-size: 10px;
+            color: var(--corp-gray);
+        }
+
+        .cert-meta {
+            text-align: right;
+            font-size: 11px;
+        }
+
+        .cert-meta strong { color: var(--corp-blue); }
+
+        .cert-meta .vigencia {
+            background: #e8f5e9;
+            padding: 4px 8px;
+            border-radius: 3px;
+            margin-top: 5px;
+            display: inline-block;
+        }
+
+        .cert-meta .vigencia strong { color: var(--status-green); }
+
+        /* Info bar */
+        .info-bar {
+            background-color: var(--bg-light);
+            border: 1px solid #e0e0e0;
+            padding: 12px;
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+            border-left: 5px solid var(--corp-blue);
+        }
+
+        .field-group label {
+            display: block;
+            font-size: 9px;
+            text-transform: uppercase;
+            color: var(--corp-gray);
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+
+        .field-group .value {
+            font-size: 13px;
+            font-weight: 600;
+            color: #000;
+            min-height: 18px;
+        }
+
+        /* Dashboard KPIs */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .kpi-card {
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            overflow: hidden;
+            text-align: center;
+        }
+
+        .kpi-header {
+            background: #eceff1;
+            padding: 8px;
+            font-size: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+            color: var(--corp-gray);
+            border-bottom: 1px solid #ccc;
+        }
+
+        .kpi-body {
+            padding: 15px;
+            min-height: 70px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .kpi-value {
+            font-size: 20px;
+            font-weight: 900;
+            line-height: 1;
+        }
+
+        .kpi-sub {
+            font-size: 10px;
+            margin-top: 5px;
+            color: #666;
+        }
+
+        .status-apto { color: var(--status-green); background-color: #e8f5e9; }
+        .status-noapto { color: var(--status-red); background-color: #ffebee; }
+        .status-clean { color: var(--corp-blue); background-color: #e3f2fd; }
+        .status-positive { color: var(--status-red); background-color: #ffebee; }
+        .status-blood { color: var(--status-red); background-color: #fff; }
+
+        /* Secciones */
+        .section-header {
+            background: var(--corp-blue);
+            color: white;
+            padding: 6px 12px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        /* Tabla de permisos */
+        .permissions-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+            margin-bottom: 20px;
+        }
+
+        .permissions-table td {
+            border-bottom: 1px solid #eee;
+            padding: 6px 10px;
+        }
+
+        .auth-tag {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 9px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .tag-autorizado { background: var(--status-green); color: white; }
+        .tag-restringido { background: var(--corp-gray); color: white; }
+
+        /* Resumen clínico */
+        .clinical-summary {
+            font-size: 10px;
+            border: 1px solid #e0e0e0;
+            padding: 10px;
+            background: #fafafa;
+            margin-bottom: 25px;
+        }
+
+        .clinical-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+            border-bottom: 1px dotted #ccc;
+            padding-bottom: 2px;
+        }
+
+        .clinical-row:last-child { border-bottom: none; }
+
+        /* Footer */
+        .cert-footer {
+            margin-top: 30px;
+            border-top: 2px solid #333;
+            padding-top: 20px;
+        }
+
+        .legal-block {
+            font-size: 8px;
+            color: #777;
+            text-align: justify;
+            margin-bottom: 30px;
+        }
+
+        .signatures {
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+        }
+
+        .sig-box { width: 40%; }
+        .sig-line { border-top: 1px solid #000; margin-bottom: 5px; padding-top: 30px; }
+        .sig-name { font-weight: bold; font-size: 11px; }
+        .sig-role { font-size: 9px; color: #555; }
+
+        /* ═══════════════════════════════════════════════════════════════
+           ESTILOS DE IMPRESIÓN
+        ═══════════════════════════════════════════════════════════════ */
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+                margin: 0;
+            }
+
+            .form-panel,
+            .preview-label {
+                display: none !important;
+            }
+
+            .app-container {
+                display: block;
+            }
+
+            .preview-panel {
+                width: 100%;
+            }
+
+            .certificate {
+                width: 100%;
+                box-shadow: none;
+                padding: 10mm;
+            }
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           VERSIÓN NO APTO (más discreta)
+        ═══════════════════════════════════════════════════════════════ */
+        .certificate.no-apto .dashboard-grid,
+        .certificate.no-apto .permissions-table,
+        .certificate.no-apto .clinical-summary {
+            display: none;
+        }
+
+        .motivo-box {
+            display: none;
+            border: 2px solid var(--corp-gray);
+            padding: 20px;
+            margin-bottom: 25px;
+            background: #fafafa;
+        }
+
+        .motivo-box h3 {
+            margin: 0 0 10px 0;
+            font-size: 12px;
+            color: var(--corp-gray);
+            text-transform: uppercase;
+        }
+
+        .motivo-box .resultado {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .motivo-box .motivo-text {
+            font-size: 12px;
+            color: #555;
+            line-height: 1.5;
+        }
+
+        .certificate.no-apto .motivo-box {
+            display: block;
+        }
+
+        .datos-basicos-noapto {
+            display: none;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .certificate.no-apto .datos-basicos-noapto {
+            display: grid;
+        }
+
+        .dato-simple {
+            padding: 10px;
+            background: #f5f5f5;
+            border: 1px solid #e0e0e0;
+        }
+
+        .dato-simple label {
+            font-size: 9px;
+            text-transform: uppercase;
+            color: var(--corp-gray);
+            display: block;
+            margin-bottom: 3px;
+        }
+
+        .dato-simple span {
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <!-- ═══════════════════════════════════════════════════════════════
+         PANEL DE CAPTURA
+    ═══════════════════════════════════════════════════════════════ -->
+    <div class="form-panel">
+        <h1>📋 Generador de Certificado</h1>
+        <p class="subtitle">Complete los campos y haga clic en el botón verde</p>
+
+        <!-- DATOS DEL DOCUMENTO -->
+        <div class="form-section">
+            <h2>📄 Datos del Documento</h2>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Folio *</label>
+                    <input type="text" id="folio" placeholder="Ej: 2025-001" oninput="actualizarCertificado()">
+                </div>
+                <div class="form-group">
+                    <label>Fecha de Emisión</label>
+                    <input type="date" id="fechaEmision" oninput="actualizarCertificado()">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Vigencia (automática)</label>
+                    <input type="text" id="vigencia" class="calculated" readonly>
+                </div>
+            </div>
+        </div>
+
+        <!-- DATOS DEL TRABAJADOR -->
+        <div class="form-section">
+            <h2>👤 Datos del Trabajador</h2>
+            <div class="form-row">
+                <div class="form-group full">
+                    <label>Nombre Completo *</label>
+                    <input type="text" id="nombre" placeholder="JUAN PÉREZ GARCÍA" oninput="actualizarCertificado()">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Puesto Solicitado *</label>
+                    <input type="text" id="puesto" placeholder="OFICIAL ALBAÑIL" oninput="actualizarCertificado()">
+                </div>
+                <div class="form-group" style="max-width: 80px;">
+                    <label>Edad *</label>
+                    <input type="number" id="edad" placeholder="35" min="16" max="80" oninput="actualizarCertificado()">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group full">
+                    <label>Empresa *</label>
+                    <input type="text" id="empresa" placeholder="CONTRATISTAS S.A." oninput="actualizarCertificado()">
+                </div>
+            </div>
+        </div>
+
+        <!-- RESULTADOS PRINCIPALES -->
+        <div class="form-section">
+            <h2>🎯 Resultados Principales</h2>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>DICTAMEN *</label>
+                    <select id="dictamen" onchange="actualizarCertificado()">
+                        <option value="">-- Seleccione --</option>
+                        <option value="APTO">APTO</option>
+                        <option value="NO APTO">NO APTO</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Panel de Drogas *</label>
+                    <select id="drogas" onchange="actualizarCertificado()">
+                        <option value="">-- Seleccione --</option>
+                        <option value="NEGATIVO">NEGATIVO</option>
+                        <option value="POSITIVO">POSITIVO</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Grupo Sanguíneo *</label>
+                    <select id="sangre" onchange="actualizarCertificado()">
+                        <option value="">-- Seleccione --</option>
+                        <option value="O POSITIVO">O POSITIVO</option>
+                        <option value="O NEGATIVO">O NEGATIVO</option>
+                        <option value="A POSITIVO">A POSITIVO</option>
+                        <option value="A NEGATIVO">A NEGATIVO</option>
+                        <option value="B POSITIVO">B POSITIVO</option>
+                        <option value="B NEGATIVO">B NEGATIVO</option>
+                        <option value="AB POSITIVO">AB POSITIVO</option>
+                        <option value="AB NEGATIVO">AB NEGATIVO</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- PERMISOS DE RIESGO -->
+        <div class="form-section">
+            <h2>⚠️ Permisos de Riesgo</h2>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Trabajo en Alturas</label>
+                    <select id="alturas" onchange="actualizarCertificado()">
+                        <option value="AUTORIZADO">AUTORIZADO</option>
+                        <option value="RESTRINGIDO">RESTRINGIDO</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Observación</label>
+                    <input type="text" id="alturas_obs" placeholder="Opcional" oninput="actualizarCertificado()">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Espacios Confinados</label>
+                    <select id="espacios" onchange="actualizarCertificado()">
+                        <option value="AUTORIZADO">AUTORIZADO</option>
+                        <option value="RESTRINGIDO">RESTRINGIDO</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Observación</label>
+                    <input type="text" id="espacios_obs" placeholder="Opcional" oninput="actualizarCertificado()">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Operación Equipo Móvil</label>
+                    <select id="equipo" onchange="actualizarCertificado()">
+                        <option value="AUTORIZADO">AUTORIZADO</option>
+                        <option value="RESTRINGIDO">RESTRINGIDO</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Observación</label>
+                    <input type="text" id="equipo_obs" placeholder="Opcional" oninput="actualizarCertificado()">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Manejo de Cargas</label>
+                    <select id="cargas" onchange="actualizarCertificado()">
+                        <option value="AUTORIZADO">AUTORIZADO</option>
+                        <option value="RESTRINGIDO">RESTRINGIDO</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Observación</label>
+                    <input type="text" id="cargas_obs" placeholder="Opcional" oninput="actualizarCertificado()">
+                </div>
+            </div>
+        </div>
+
+        <!-- SIGNOS VITALES -->
+        <div class="form-section">
+            <h2>💓 Signos Vitales</h2>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>T.A. (mmHg)</label>
+                    <input type="text" id="ta" placeholder="120/80" oninput="actualizarCertificado()">
+                </div>
+                <div class="form-group">
+                    <label>F.C. (lpm)</label>
+                    <input type="number" id="fc" placeholder="72" oninput="actualizarCertificado()">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Peso (kg)</label>
+                    <input type="number" id="peso" placeholder="75" step="0.1" oninput="calcularIMC()">
+                </div>
+                <div class="form-group">
+                    <label>Talla (m)</label>
+                    <input type="number" id="talla" placeholder="1.70" step="0.01" oninput="calcularIMC()">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>IMC (automático)</label>
+                    <input type="text" id="imc" class="calculated" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Clasificación</label>
+                    <input type="text" id="imc_clasif" class="calculated" readonly>
+                </div>
+            </div>
+        </div>
+
+        <!-- EVALUACIONES CLÍNICAS -->
+        <div class="form-section">
+            <h2>🔬 Evaluaciones Clínicas</h2>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Agudeza Visual</label>
+                    <input type="text" id="visual" placeholder="20/20" oninput="actualizarCertificado()">
+                </div>
+                <div class="form-group">
+                    <label>Daltonismo</label>
+                    <select id="daltonismo" onchange="actualizarCertificado()">
+                        <option value="NEGATIVO">NEGATIVO</option>
+                        <option value="POSITIVO">POSITIVO</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Audiometría (dB)</label>
+                    <input type="text" id="audio" placeholder="15" oninput="actualizarCertificado()">
+                </div>
+                <div class="form-group">
+                    <label>Hipoacusia</label>
+                    <select id="hipoacusia" onchange="actualizarCertificado()">
+                        <option value="NO">NO</option>
+                        <option value="SÍ">SÍ</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Biometría Hemática</label>
+                    <select id="bh" onchange="actualizarCertificado()">
+                        <option value="NORMAL">NORMAL</option>
+                        <option value="ANORMAL">ANORMAL</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Química Sanguínea</label>
+                    <select id="qs" onchange="actualizarCertificado()">
+                        <option value="NORMAL">NORMAL</option>
+                        <option value="ANORMAL">ANORMAL</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>EGO</label>
+                    <select id="ego" onchange="actualizarCertificado()">
+                        <option value="NORMAL">NORMAL</option>
+                        <option value="ANORMAL">ANORMAL</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Rx Tórax</label>
+                    <select id="torax" onchange="actualizarCertificado()">
+                        <option value="NORMAL">NORMAL</option>
+                        <option value="ANORMAL">ANORMAL</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Rx Columna Lumbosacra</label>
+                    <select id="columna" onchange="actualizarCertificado()">
+                        <option value="NORMAL">NORMAL</option>
+                        <option value="ANORMAL">ANORMAL</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- MOTIVO NO APTO -->
+        <div class="form-section" id="seccion-motivo" style="display: none;">
+            <h2>📝 Motivo (Solo si NO APTO)</h2>
+            <div class="form-row">
+                <div class="form-group full">
+                    <label>Motivo Funcional (sin diagnósticos)</label>
+                    <input type="text" id="motivo" placeholder="Ej: Capacidad visual insuficiente para el puesto" oninput="actualizarCertificado()">
+                </div>
+            </div>
+        </div>
+
+        <!-- BOTÓN GRANDE -->
+        <button class="btn-print" onclick="imprimir()">
+            🖨️ IMPRIMIR / GUARDAR PDF
+        </button>
+        <p class="help-text">Se abrirá el diálogo de impresión.<br>Seleccione "Guardar como PDF" para generar el archivo.</p>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         VISTA PREVIA DEL CERTIFICADO
+    ═══════════════════════════════════════════════════════════════ -->
+    <div class="preview-panel">
+        <p class="preview-label">👁️ Vista Previa (así se verá el PDF)</p>
+        
+        <div class="certificate" id="certificado">
+            <!-- Header -->
+            <header class="cert-header">
+                <div class="cert-brand">
+                    <h1>CLÍNICA INDUSTRIAL OBREGÓN</h1>
+                    <p>CERTIFICADO DE APTITUD MÉDICO-LABORAL</p>
+                    <p>Licencia Sanitaria: 3997-91 | Cananea, Sonora</p>
+                </div>
+                <div class="cert-meta">
+                    <p>FOLIO: <strong id="cert-folio">---</strong></p>
+                    <p>EMISIÓN: <strong id="cert-emision">--/--/----</strong></p>
+                    <p class="vigencia">VIGENCIA: <strong id="cert-vigencia">--/--/----</strong></p>
+                </div>
+            </header>
+
+            <!-- Info Bar -->
+            <div class="info-bar">
+                <div class="field-group">
+                    <label>Colaborador</label>
+                    <div class="value" id="cert-nombre">---</div>
+                </div>
+                <div class="field-group">
+                    <label>Puesto Solicitado</label>
+                    <div class="value" id="cert-puesto">---</div>
+                </div>
+                <div class="field-group">
+                    <label>Edad</label>
+                    <div class="value" id="cert-edad">---</div>
+                </div>
+                <div class="field-group">
+                    <label>Empresa</label>
+                    <div class="value" id="cert-empresa">---</div>
+                </div>
+            </div>
+
+            <!-- Dashboard -->
+            <div class="dashboard-grid">
+                <div class="kpi-card">
+                    <div class="kpi-header">Dictamen de Aptitud</div>
+                    <div class="kpi-body" id="kpi-dictamen">
+                        <span class="kpi-value" id="cert-dictamen">---</span>
+                        <span class="kpi-sub">PARA EL PUESTO</span>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-header">Panel de Drogas (5)</div>
+                    <div class="kpi-body" id="kpi-drogas">
+                        <span class="kpi-value" id="cert-drogas">---</span>
+                        <span class="kpi-sub" id="cert-drogas-sub">---</span>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-header">Grupo y RH</div>
+                    <div class="kpi-body status-blood">
+                        <span class="kpi-value" id="cert-sangre" style="color: #b71c1c;">---</span>
+                        <span class="kpi-sub">CONFIRMADO</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Motivo NO APTO (oculto por defecto) -->
+            <div class="motivo-box">
+                <h3>Resultado de la Evaluación Médica</h3>
+                <div class="resultado">NO CUMPLE CON LOS REQUISITOS MÉDICOS PARA EL PUESTO SOLICITADO</div>
+                <div class="motivo-text">
+                    <strong>Motivo Funcional:</strong> <span id="cert-motivo">---</span>
+                </div>
+            </div>
+
+            <div class="datos-basicos-noapto">
+                <div class="dato-simple">
+                    <label>Panel de Drogas (5)</label>
+                    <span id="cert-drogas2">---</span>
+                </div>
+                <div class="dato-simple">
+                    <label>Grupo Sanguíneo</label>
+                    <span id="cert-sangre2">---</span>
+                </div>
+            </div>
+
+            <!-- Permisos -->
+            <div class="section-header">Permisos de Riesgo y Restricciones</div>
+            <table class="permissions-table">
+                <tr>
+                    <td width="40%"><strong>TRABAJO EN ALTURAS (>1.80m)</strong></td>
+                    <td width="15%" align="center"><span class="auth-tag" id="perm-alturas">---</span></td>
+                    <td id="obs-alturas">---</td>
+                </tr>
+                <tr>
+                    <td><strong>ESPACIOS CONFINADOS</strong></td>
+                    <td align="center"><span class="auth-tag" id="perm-espacios">---</span></td>
+                    <td id="obs-espacios">---</td>
+                </tr>
+                <tr>
+                    <td><strong>OPERACIÓN DE EQUIPO MÓVIL</strong></td>
+                    <td align="center"><span class="auth-tag" id="perm-equipo">---</span></td>
+                    <td id="obs-equipo">---</td>
+                </tr>
+                <tr>
+                    <td><strong>MANEJO DE CARGAS MANUALES</strong></td>
+                    <td align="center"><span class="auth-tag" id="perm-cargas">---</span></td>
+                    <td id="obs-cargas">---</td>
+                </tr>
+            </table>
+
+            <!-- Resumen Clínico -->
+            <div class="section-header">Resumen del Protocolo de Evaluación</div>
+            <div class="clinical-summary">
+                <div class="clinical-row">
+                    <strong>SIGNOS VITALES:</strong>
+                    <span id="cert-signos">---</span>
+                </div>
+                <div class="clinical-row">
+                    <strong>AGUDEZA VISUAL:</strong>
+                    <span id="cert-visual">---</span>
+                </div>
+                <div class="clinical-row">
+                    <strong>AUDIOMETRÍA:</strong>
+                    <span id="cert-audio">---</span>
+                </div>
+                <div class="clinical-row">
+                    <strong>LABORATORIO CLÍNICO:</strong>
+                    <span id="cert-lab">---</span>
+                </div>
+                <div class="clinical-row">
+                    <strong>IMAGENOLOGÍA:</strong>
+                    <span id="cert-imagen">---</span>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <footer class="cert-footer">
+                <div class="legal-block">
+                    <strong>DECLARACIÓN MÉDICA:</strong>
+                    Este documento certifica la aptitud funcional del trabajador para el puesto descrito, basado en la evaluación clínica y estudios auxiliares realizados en la fecha indicada. El expediente clínico detallado permanece bajo resguardo del Servicio Médico conforme a la NOM-004-SSA3-2012. Válido únicamente durante el período de vigencia indicado.
+                </div>
+
+                <div class="signatures">
+                    <div class="sig-box">
+                        <div class="sig-line"></div>
+                        <div class="sig-name">Q.C. GLORIA MORA PADILLA</div>
+                        <div class="sig-role">Responsable de Laboratorio<br>Céd. Prof: 12200786</div>
+                    </div>
+                    <div class="sig-box">
+                        <div class="sig-line"></div>
+                        <div class="sig-name">DR. JOSÉ LUIS ESPINOSA</div>
+                        <div class="sig-role">Médico Evaluador / Salud Ocupacional<br>Céd. Prof: 1268375</div>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Inicializar fecha de hoy
+    document.addEventListener('DOMContentLoaded', function() {
+        const hoy = new Date();
+        const fechaInput = document.getElementById('fechaEmision');
+        fechaInput.value = hoy.toISOString().split('T')[0];
+        actualizarCertificado();
+    });
+
+    function formatearFecha(fecha) {
+        if (!fecha) return '--/--/----';
+        const d = new Date(fecha + 'T00:00:00');
+        const dia = String(d.getDate()).padStart(2, '0');
+        const mes = String(d.getMonth() + 1).padStart(2, '0');
+        const año = d.getFullYear();
+        return `${dia}/${mes}/${año}`;
+    }
+
+    function calcularVigencia(fecha) {
+        if (!fecha) return '--/--/----';
+        const d = new Date(fecha + 'T00:00:00');
+        d.setFullYear(d.getFullYear() + 1);
+        const dia = String(d.getDate()).padStart(2, '0');
+        const mes = String(d.getMonth() + 1).padStart(2, '0');
+        const año = d.getFullYear();
+        return `${dia}/${mes}/${año}`;
+    }
+
+    function calcularIMC() {
+        const peso = parseFloat(document.getElementById('peso').value);
+        const talla = parseFloat(document.getElementById('talla').value);
+        
+        if (peso && talla && talla > 0) {
+            const imc = (peso / (talla * talla)).toFixed(1);
+            document.getElementById('imc').value = imc;
+            
+            let clasif = '';
+            if (imc < 18.5) clasif = 'Bajo Peso';
+            else if (imc < 25) clasif = 'Normal';
+            else if (imc < 30) clasif = 'Sobrepeso';
+            else clasif = 'Obesidad';
+            
+            document.getElementById('imc_clasif').value = clasif;
+        } else {
+            document.getElementById('imc').value = '';
+            document.getElementById('imc_clasif').value = '';
+        }
+        
+        actualizarCertificado();
+    }
+
+    function actualizarPermiso(id, valor, obsId, obs) {
+        const elem = document.getElementById(id);
+        elem.textContent = valor;
+        elem.className = 'auth-tag ' + (valor === 'AUTORIZADO' ? 'tag-autorizado' : 'tag-restringido');
+        document.getElementById(obsId).textContent = obs || '---';
+    }
+
+    function actualizarCertificado() {
+        // Datos del documento
+        const folio = document.getElementById('folio').value || '---';
+        const fechaEmision = document.getElementById('fechaEmision').value;
+        const vigencia = calcularVigencia(fechaEmision);
+        
+        document.getElementById('cert-folio').textContent = folio;
+        document.getElementById('cert-emision').textContent = formatearFecha(fechaEmision);
+        document.getElementById('cert-vigencia').textContent = vigencia;
+        document.getElementById('vigencia').value = vigencia;
+
+        // Datos del trabajador
+        document.getElementById('cert-nombre').textContent = (document.getElementById('nombre').value || '---').toUpperCase();
+        document.getElementById('cert-puesto').textContent = (document.getElementById('puesto').value || '---').toUpperCase();
+        document.getElementById('cert-edad').textContent = document.getElementById('edad').value ? document.getElementById('edad').value + ' AÑOS' : '---';
+        document.getElementById('cert-empresa').textContent = (document.getElementById('empresa').value || '---').toUpperCase();
+
+        // Dictamen
+        const dictamen = document.getElementById('dictamen').value;
+        const certDictamen = document.getElementById('cert-dictamen');
+        const kpiDictamen = document.getElementById('kpi-dictamen');
+        const certificado = document.getElementById('certificado');
+        const seccionMotivo = document.getElementById('seccion-motivo');
+        
+        certDictamen.textContent = dictamen || '---';
+        
+        if (dictamen === 'APTO') {
+            kpiDictamen.className = 'kpi-body status-apto';
+            certificado.classList.remove('no-apto');
+            seccionMotivo.style.display = 'none';
+        } else if (dictamen === 'NO APTO') {
+            kpiDictamen.className = 'kpi-body status-noapto';
+            certificado.classList.add('no-apto');
+            seccionMotivo.style.display = 'block';
+        } else {
+            kpiDictamen.className = 'kpi-body';
+            certificado.classList.remove('no-apto');
+            seccionMotivo.style.display = 'none';
+        }
+
+        // Drogas
+        const drogas = document.getElementById('drogas').value;
+        const certDrogas = document.getElementById('cert-drogas');
+        const certDrogas2 = document.getElementById('cert-drogas2');
+        const kpiDrogas = document.getElementById('kpi-drogas');
+        const certDrogasSub = document.getElementById('cert-drogas-sub');
+        
+        certDrogas.textContent = drogas || '---';
+        certDrogas2.textContent = drogas || '---';
+        
+        if (drogas === 'NEGATIVO') {
+            kpiDrogas.className = 'kpi-body status-clean';
+            certDrogasSub.textContent = 'LIBRE DE SUSTANCIAS';
+        } else if (drogas === 'POSITIVO') {
+            kpiDrogas.className = 'kpi-body status-positive';
+            certDrogasSub.textContent = 'REQUIERE REVISIÓN';
+        } else {
+            kpiDrogas.className = 'kpi-body';
+            certDrogasSub.textContent = '---';
+        }
+
+        // Sangre
+        const sangre = document.getElementById('sangre').value;
+        document.getElementById('cert-sangre').textContent = sangre || '---';
+        document.getElementById('cert-sangre2').textContent = sangre || '---';
+
+        // Permisos
+        actualizarPermiso('perm-alturas', document.getElementById('alturas').value, 'obs-alturas', document.getElementById('alturas_obs').value);
+        actualizarPermiso('perm-espacios', document.getElementById('espacios').value, 'obs-espacios', document.getElementById('espacios_obs').value);
+        actualizarPermiso('perm-equipo', document.getElementById('equipo').value, 'obs-equipo', document.getElementById('equipo_obs').value);
+        actualizarPermiso('perm-cargas', document.getElementById('cargas').value, 'obs-cargas', document.getElementById('cargas_obs').value);
+
+        // Signos vitales
+        const ta = document.getElementById('ta').value || '---';
+        const fc = document.getElementById('fc').value || '---';
+        const imc = document.getElementById('imc').value || '---';
+        const imcClasif = document.getElementById('imc_clasif').value || '---';
+        document.getElementById('cert-signos').textContent = `T.A: ${ta} mmHg | F.C: ${fc} lpm | IMC: ${imc} (${imcClasif})`;
+
+        // Visual
+        const visual = document.getElementById('visual').value || '---';
+        const daltonismo = document.getElementById('daltonismo').value;
+        document.getElementById('cert-visual').textContent = `${visual} Binocular | Daltonismo: ${daltonismo}`;
+
+        // Audio
+        const audio = document.getElementById('audio').value || '---';
+        const hipoacusia = document.getElementById('hipoacusia').value;
+        document.getElementById('cert-audio').textContent = `Hipoacusia: ${hipoacusia} | Promedio: ${audio}dB`;
+
+        // Laboratorio
+        const bh = document.getElementById('bh').value;
+        const qs = document.getElementById('qs').value;
+        const ego = document.getElementById('ego').value;
+        document.getElementById('cert-lab').textContent = `BH: ${bh} | QS: ${qs} | EGO: ${ego}`;
+
+        // Imagenología
+        const torax = document.getElementById('torax').value;
+        const columna = document.getElementById('columna').value;
+        document.getElementById('cert-imagen').textContent = `Tórax PA: ${torax} | Columna LS: ${columna}`;
+
+        // Motivo NO APTO
+        const motivo = document.getElementById('motivo').value || 'El candidato presenta una condición que limita su capacidad para desempeñar de manera segura las funciones del puesto.';
+        document.getElementById('cert-motivo').textContent = motivo;
+    }
+
+    function imprimir() {
+        // Validaciones básicas
+        const folio = document.getElementById('folio').value;
+        const nombre = document.getElementById('nombre').value;
+        const dictamen = document.getElementById('dictamen').value;
+
+        if (!folio) {
+            alert('⚠️ Ingrese el FOLIO antes de imprimir.');
+            document.getElementById('folio').focus();
+            return;
+        }
+
+        if (!nombre) {
+            alert('⚠️ Ingrese el NOMBRE del trabajador.');
+            document.getElementById('nombre').focus();
+            return;
+        }
+
+        if (!dictamen) {
+            alert('⚠️ Seleccione el DICTAMEN (APTO / NO APTO).');
+            document.getElementById('dictamen').focus();
+            return;
+        }
+
+        window.print();
+    }
+</script>
+
+</body>
+</html>
