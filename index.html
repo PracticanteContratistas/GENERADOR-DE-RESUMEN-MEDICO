@@ -1,0 +1,1295 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Certificado Médico - Speed Lite</title>
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        :root {
+            --azul: #002B49;
+            --azul-light: #003d66;
+            --gris: #546e7a;
+            --verde: #1b5e20;
+            --verde-bg: #e8f5e9;
+            --rojo: #b71c1c;
+            --rojo-bg: #ffebee;
+            --bg: #eceff1;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg);
+            min-height: 100vh;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 420px 1fr;
+            gap: 20px;
+            padding: 20px;
+            max-width: 1500px;
+            margin: 0 auto;
+        }
+
+        /* ═══════════════════════════════════════════
+           PANEL IZQUIERDO
+        ═══════════════════════════════════════════ */
+        .form-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .form-header {
+            background: var(--azul);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+        }
+
+        .form-header h1 { font-size: 18px; font-weight: 600; }
+        .form-header p { font-size: 11px; opacity: 0.8; margin-top: 3px; }
+
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        }
+
+        .card.config-card {
+            border: 2px dashed var(--azul);
+            background: #f0f4f8;
+        }
+
+        .card-title {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--gris);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .card.config-card .card-title { color: var(--azul); }
+
+        .config-hint {
+            font-size: 9px;
+            color: var(--gris);
+            font-style: italic;
+            margin-top: -8px;
+            margin-bottom: 10px;
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .row.single { grid-template-columns: 1fr; }
+        .row:last-child { margin-bottom: 0; }
+
+        .field label {
+            display: block;
+            font-size: 10px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+        }
+
+        .field input,
+        .field select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .field input:focus,
+        .field select:focus {
+            outline: none;
+            border-color: var(--azul);
+            box-shadow: 0 0 0 3px rgba(0,43,73,0.1);
+        }
+
+        .field input[type="text"] { text-transform: uppercase; }
+        .field.large input { padding: 14px; font-size: 16px; }
+
+        select.apto {
+            background: var(--verde-bg);
+            border-color: var(--verde);
+            color: var(--verde);
+            font-weight: 700;
+        }
+
+        select.no-apto {
+            background: var(--rojo-bg);
+            border-color: var(--rojo);
+            color: var(--rojo);
+            font-weight: 700;
+        }
+
+        .calculated {
+            background: #f8f9fa !important;
+            color: var(--gris);
+            font-weight: 600 !important;
+        }
+
+        .motivo-container {
+            display: none;
+            margin-top: 10px;
+            padding: 12px;
+            background: var(--rojo-bg);
+            border: 2px solid var(--rojo);
+            border-radius: 6px;
+        }
+
+        .motivo-container.show { display: block; }
+        .motivo-container label { color: var(--rojo); font-weight: 700; }
+        .motivo-container input { border-color: var(--rojo); }
+
+        /* ═══════════════════════════════════════════
+           BOTONES
+        ═══════════════════════════════════════════ */
+        .btn-primary {
+            width: 100%;
+            padding: 18px;
+            font-size: 18px;
+            font-weight: 700;
+            color: white;
+            background: linear-gradient(135deg, var(--verde) 0%, #2e7d32 100%);
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 15px rgba(27,94,32,0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(27,94,32,0.4);
+        }
+
+        .btn-primary:active { transform: translateY(0); }
+
+        .btn-primary:disabled {
+            background: #999;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-secondary {
+            width: 100%;
+            padding: 14px;
+            font-size: 14px;
+            font-weight: 600;
+            color: white;
+            background: var(--gris);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-secondary:hover { background: #455a64; }
+
+        .speed-tip {
+            text-align: center;
+            font-size: 10px;
+            color: var(--gris);
+            margin-top: 8px;
+        }
+
+        /* ═══════════════════════════════════════════
+           PANEL DERECHO - CERTIFICADO
+        ═══════════════════════════════════════════ */
+        .preview-panel {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .preview-label {
+            font-size: 11px;
+            color: var(--gris);
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        #certificado {
+            width: 750px;
+            min-height: 950px;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 5px 30px rgba(0,0,0,0.12);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            transition: box-shadow 0.3s;
+        }
+
+        #certificado.no-apto-border {
+            box-shadow: 0 0 0 4px var(--rojo), 0 5px 30px rgba(183,28,28,0.3);
+        }
+
+        /* Header certificado */
+        .cert-header {
+            background: var(--azul);
+            color: white;
+            padding: 20px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .cert-brand h1 {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .cert-brand p {
+            font-size: 10px;
+            opacity: 0.8;
+            margin-top: 4px;
+            letter-spacing: 0.3px;
+        }
+
+        .cert-date { text-align: right; font-size: 10px; }
+
+        .cert-date .fecha-label {
+            font-size: 8px;
+            opacity: 0.7;
+            text-transform: uppercase;
+            margin-bottom: 2px;
+        }
+
+        .cert-date .fecha {
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        /* Body certificado */
+        .cert-body { padding: 20px 25px; }
+
+        .worker-info {
+            display: grid;
+            grid-template-columns: 2fr 1fr 0.7fr 1.5fr;
+            gap: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-left: 4px solid var(--azul);
+            margin-bottom: 20px;
+        }
+
+        .info-field label {
+            display: block;
+            font-size: 8px;
+            text-transform: uppercase;
+            color: var(--gris);
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+
+        .info-field .value {
+            font-size: 12px;
+            font-weight: 600;
+            color: #000;
+            min-height: 16px;
+        }
+
+        /* KPIs */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .kpi-card {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+            text-align: center;
+        }
+
+        .kpi-card .header {
+            background: #f0f0f0;
+            padding: 6px;
+            font-size: 8px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--gris);
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .kpi-card .body { padding: 12px 8px; }
+        .kpi-card .value { font-size: 20px; font-weight: 900; }
+
+        .kpi-card .sub {
+            font-size: 7px;
+            color: var(--gris);
+            margin-top: 2px;
+            text-transform: uppercase;
+        }
+
+        .kpi-apto .body { background: var(--verde-bg); }
+        .kpi-apto .value { color: var(--verde); }
+        .kpi-no-apto .body { background: var(--rojo-bg); }
+        .kpi-no-apto .value { color: var(--rojo); }
+        .kpi-clean .body { background: #e3f2fd; }
+        .kpi-clean .value { color: var(--azul); }
+        .kpi-positive .body { background: var(--rojo-bg); }
+        .kpi-positive .value { color: var(--rojo); }
+
+        .section-title {
+            background: var(--azul);
+            color: white;
+            padding: 6px 12px;
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+
+        /* Permisos */
+        .permisos-grid {
+            display: grid;
+            gap: 6px;
+            margin-bottom: 20px;
+        }
+
+        .permiso-row {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 10px;
+            align-items: center;
+            padding: 8px 12px;
+            background: #fafafa;
+            border-radius: 4px;
+            font-size: 10px;
+        }
+
+        .permiso-row .nombre { font-weight: 600; }
+
+        .permiso-row .nombre small {
+            display: block;
+            font-weight: 400;
+            color: var(--gris);
+            font-size: 8px;
+        }
+
+        .permiso-tag {
+            padding: 3px 10px;
+            border-radius: 4px;
+            font-size: 8px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .tag-autorizado { background: var(--verde); color: white; }
+        .tag-restringido { background: var(--gris); color: white; }
+
+        .permiso-row .obs {
+            color: var(--verde);
+            font-size: 9px;
+            text-align: right;
+            font-weight: 500;
+            max-width: 220px;
+        }
+
+        /* Resumen clínico */
+        .clinical-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .clinical-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 10px;
+            background: #fafafa;
+            border-radius: 4px;
+            font-size: 9px;
+        }
+
+        .clinical-item strong { color: var(--gris); }
+
+        /* Motivo NO APTO certificado */
+        .cert-motivo {
+            display: none;
+            background: var(--rojo-bg);
+            border: 2px solid var(--rojo);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .cert-motivo.show { display: block; }
+
+        .cert-motivo h3 {
+            color: var(--rojo);
+            font-size: 11px;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .cert-motivo .text { font-size: 12px; color: #333; }
+
+        /* Footer certificado */
+        .cert-footer {
+            border-top: 2px solid var(--azul);
+            padding: 15px 25px;
+            margin-top: 15px;
+        }
+
+        .signature-single {
+            text-align: center;
+            max-width: 320px;
+            margin: 0 auto 15px auto;
+        }
+
+        .sig-line {
+            border-top: none;
+            padding-top: 8px;
+        }
+
+        .sig-name-script {
+            font-family: 'Dancing Script', cursive;
+            font-size: 28px;
+            color: var(--azul);
+            line-height: 1.2;
+        }
+
+        .sig-name-formal {
+            font-size: 10px;
+            font-weight: 700;
+            color: #000;
+            text-transform: uppercase;
+            margin-top: 2px;
+            letter-spacing: 0.5px;
+        }
+
+        .sig-role {
+            font-size: 9px;
+            color: var(--gris);
+            margin-top: 3px;
+        }
+
+        .legal-blindaje {
+            font-size: 7px;
+            color: #999;
+            text-align: center;
+            line-height: 1.6;
+            margin-top: 12px;
+            padding-top: 10px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .doc-id {
+            font-size: 6px;
+            color: #aaa;
+            text-align: right;
+            margin-top: 8px;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: var(--verde);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            font-weight: 600;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.25);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .toast.show { transform: translateY(0); opacity: 1; }
+    </style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<div class="container">
+    <!-- ═══════════════════════════════════════════
+         FORMULARIO
+    ═══════════════════════════════════════════ -->
+    <div class="form-panel">
+        <div class="form-header">
+            <h1>⚡ Certificado Speed-Lite</h1>
+            <p>White Label. Solo configure una vez, certifique siempre.</p>
+        </div>
+
+        <!-- CONFIGURACIÓN PERSISTENTE -->
+        <div class="card config-card">
+            <div class="card-title">⚙️ Configuración (Se guarda sola)</div>
+            <p class="config-hint">Estos datos se guardan en su navegador. No se borran al limpiar paciente.</p>
+            <div class="row single">
+                <div class="field">
+                    <label>Nombre de la Clínica</label>
+                    <input type="text" id="cfgClinica" placeholder="SERVICIO MÉDICO EMPRESARIAL" oninput="guardarConfig(); actualizar()">
+                </div>
+            </div>
+            <div class="row">
+                <div class="field">
+                    <label>Nombre del Médico</label>
+                    <input type="text" id="cfgMedico" placeholder="DR. TU NOMBRE" oninput="guardarConfig(); actualizar()">
+                </div>
+                <div class="field">
+                    <label>Cédula Profesional</label>
+                    <input type="text" id="cfgCedula" placeholder="12345678" oninput="guardarConfig(); actualizar()">
+                </div>
+            </div>
+        </div>
+
+        <!-- FECHA -->
+        <div class="card">
+            <div class="card-title">📅 Fecha</div>
+            <div class="row single">
+                <div class="field">
+                    <label>Fecha de Emisión</label>
+                    <input type="date" id="fecha" onchange="actualizar()">
+                </div>
+            </div>
+        </div>
+
+        <!-- TRABAJADOR -->
+        <div class="card">
+            <div class="card-title">👤 Datos del Trabajador</div>
+            <div class="row single">
+                <div class="field large">
+                    <label>Nombre Completo</label>
+                    <input type="text" id="nombre" placeholder="Nombre del trabajador" oninput="actualizar()">
+                </div>
+            </div>
+            <div class="row">
+                <div class="field">
+                    <label>Puesto</label>
+                    <input type="text" id="puesto" placeholder="Puesto" oninput="actualizar()">
+                </div>
+                <div class="field">
+                    <label>Edad</label>
+                    <input type="number" id="edad" placeholder="Años" oninput="actualizar()">
+                </div>
+            </div>
+            <div class="row single">
+                <div class="field">
+                    <label>Empresa / Contratista</label>
+                    <input type="text" id="empresa" placeholder="Empresa" oninput="actualizar()">
+                </div>
+            </div>
+        </div>
+
+        <!-- DICTAMEN -->
+        <div class="card">
+            <div class="card-title">🎯 Dictamen</div>
+            <div class="row">
+                <div class="field">
+                    <label>Resultado</label>
+                    <select id="dictamen" onchange="cambiarDictamen()">
+                        <option value="APTO" selected>✓ APTO</option>
+                        <option value="NO APTO">✗ NO APTO</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label>Antidoping</label>
+                    <select id="drogas" onchange="cambiarDrogas()">
+                        <option value="NEGATIVO" selected>NEGATIVO</option>
+                        <option value="POSITIVO">POSITIVO</option>
+                    </select>
+                </div>
+            </div>
+            <div class="row single">
+                <div class="field">
+                    <label>Tipo de Sangre</label>
+                    <select id="sangre" onchange="actualizar()">
+                        <option value="">-- Seleccione --</option>
+                        <option value="O+">O+</option>
+                        <option value="O-">O-</option>
+                        <option value="A+">A+</option>
+                        <option value="A-">A-</option>
+                        <option value="B+">B+</option>
+                        <option value="B-">B-</option>
+                        <option value="AB+">AB+</option>
+                        <option value="AB-">AB-</option>
+                    </select>
+                </div>
+            </div>
+            <div class="motivo-container" id="motivoContainer">
+                <div class="field">
+                    <label>⚠️ Motivo de NO APTO (funcional, sin diagnósticos)</label>
+                    <input type="text" id="motivo" placeholder="Ej: Limitación visual para el puesto" oninput="actualizar()">
+                </div>
+            </div>
+        </div>
+
+        <!-- SIGNOS VITALES -->
+        <div class="card">
+            <div class="card-title">💓 Signos Vitales</div>
+            <div class="row">
+                <div class="field">
+                    <label>T.A. (mmHg)</label>
+                    <input type="text" id="ta" placeholder="120/80" oninput="actualizar()">
+                </div>
+                <div class="field">
+                    <label>F.C. (lpm)</label>
+                    <input type="text" id="fc" placeholder="72" oninput="actualizar()">
+                </div>
+            </div>
+            <div class="row">
+                <div class="field">
+                    <label>Peso (kg)</label>
+                    <input type="number" id="peso" step="0.1" oninput="calcularIMC()">
+                </div>
+                <div class="field">
+                    <label>Talla (m)</label>
+                    <input type="number" id="talla" step="0.01" oninput="calcularIMC()">
+                </div>
+            </div>
+            <div class="row">
+                <div class="field">
+                    <label>IMC</label>
+                    <input type="text" id="imc" class="calculated" readonly>
+                </div>
+                <div class="field">
+                    <label>Clasificación</label>
+                    <input type="text" id="imcClasif" class="calculated" readonly>
+                </div>
+            </div>
+        </div>
+
+        <!-- PERMISOS -->
+        <div class="card">
+            <div class="card-title">⚠️ Permisos de Riesgo</div>
+            <div class="row">
+                <div class="field">
+                    <label>Alturas</label>
+                    <select id="pAlturas" onchange="verificarPermiso('Alturas')">
+                        <option value="AUTORIZADO" selected>AUTORIZADO</option>
+                        <option value="RESTRINGIDO">RESTRINGIDO</option>
+                    </select>
+                </div>
+                <div class="field" style="flex:2">
+                    <label>Observación</label>
+                    <input type="text" id="obsAltInput" value="Sistema vestibular y cardiovascular íntegros" oninput="actualizar()">
+                </div>
+            </div>
+            <div class="row">
+                <div class="field">
+                    <label>Esp. Confinados</label>
+                    <select id="pEspacios" onchange="verificarPermiso('Espacios')">
+                        <option value="AUTORIZADO" selected>AUTORIZADO</option>
+                        <option value="RESTRINGIDO">RESTRINGIDO</option>
+                    </select>
+                </div>
+                <div class="field" style="flex:2">
+                    <label>Observación</label>
+                    <input type="text" id="obsEspInput" value="Espirometría dentro de rangos normales" oninput="actualizar()">
+                </div>
+            </div>
+            <div class="row">
+                <div class="field">
+                    <label>Equipo Móvil</label>
+                    <select id="pEquipo" onchange="verificarPermiso('Equipo')">
+                        <option value="AUTORIZADO" selected>AUTORIZADO</option>
+                        <option value="RESTRINGIDO">RESTRINGIDO</option>
+                    </select>
+                </div>
+                <div class="field" style="flex:2">
+                    <label>Observación</label>
+                    <input type="text" id="obsEquInput" value="Agudeza visual y auditiva sin alteraciones" oninput="actualizar()">
+                </div>
+            </div>
+            <div class="row">
+                <div class="field">
+                    <label>Cargas</label>
+                    <select id="pCargas" onchange="verificarPermiso('Cargas')">
+                        <option value="AUTORIZADO" selected>AUTORIZADO</option>
+                        <option value="RESTRINGIDO">RESTRINGIDO</option>
+                    </select>
+                </div>
+                <div class="field" style="flex:2">
+                    <label>Observación</label>
+                    <input type="text" id="obsCarInput" value="Sin limitación musculoesquelética" oninput="actualizar()">
+                </div>
+            </div>
+        </div>
+
+        <!-- CLÍNICOS -->
+        <div class="card">
+            <div class="card-title">🔬 Evaluaciones (Default: Normal)</div>
+            <div class="row">
+                <div class="field">
+                    <label>Agudeza Visual</label>
+                    <input type="text" id="visual" value="20/20" oninput="actualizar()">
+                </div>
+                <div class="field">
+                    <label>Daltonismo</label>
+                    <select id="daltonismo" onchange="actualizar()">
+                        <option value="NEG" selected>NEG</option>
+                        <option value="POS">POS</option>
+                    </select>
+                </div>
+            </div>
+            <div class="row">
+                <div class="field">
+                    <label>Audiometría</label>
+                    <input type="text" id="audio" value="Normal" oninput="actualizar()">
+                </div>
+                <div class="field">
+                    <label>Hipoacusia</label>
+                    <select id="hipoacusia" onchange="actualizar()">
+                        <option value="NO" selected>NO</option>
+                        <option value="SÍ">SÍ</option>
+                    </select>
+                </div>
+            </div>
+            <div class="row">
+                <div class="field">
+                    <label>Laboratorios</label>
+                    <select id="labs" onchange="actualizar()">
+                        <option value="NORMAL" selected>NORMAL</option>
+                        <option value="ANORMAL">ANORMAL</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label>Radiografías</label>
+                    <select id="rx" onchange="actualizar()">
+                        <option value="NORMAL" selected>NORMAL</option>
+                        <option value="ANORMAL">ANORMAL</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- BOTONES -->
+        <button class="btn-primary" id="btnPDF" onclick="descargarPDF()">
+            📥 DESCARGAR PDF
+        </button>
+
+        <button class="btn-secondary" onclick="siguiente()">
+            🔄 LIMPIAR / SIGUIENTE PACIENTE
+        </button>
+
+        <p class="speed-tip">⚡ Happy Path: Si todo está normal, solo llene nombre y signos vitales</p>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         CERTIFICADO (Vista Previa)
+    ═══════════════════════════════════════════ -->
+    <div class="preview-panel">
+        <p class="preview-label">Vista Previa del Certificado</p>
+
+        <div id="certificado">
+            <!-- Header -->
+            <div class="cert-header">
+                <div class="cert-brand">
+                    <h1 id="cClinica">SERVICIO MÉDICO EMPRESARIAL</h1>
+                    <p>RESUMEN DE APTITUD MEDICA LABORAL</p>
+                </div>
+                <div class="cert-date">
+                    <div class="fecha-label">Fecha de Emisión</div>
+                    <div class="fecha" id="cFecha">--/--/----</div>
+                </div>
+            </div>
+
+            <!-- Body -->
+            <div class="cert-body">
+                <div class="worker-info">
+                    <div class="info-field">
+                        <label>Colaborador</label>
+                        <div class="value" id="cNombre">---</div>
+                    </div>
+                    <div class="info-field">
+                        <label>Puesto</label>
+                        <div class="value" id="cPuesto">---</div>
+                    </div>
+                    <div class="info-field">
+                        <label>Edad</label>
+                        <div class="value" id="cEdad">---</div>
+                    </div>
+                    <div class="info-field">
+                        <label>Empresa</label>
+                        <div class="value" id="cEmpresa">---</div>
+                    </div>
+                </div>
+
+                <!-- KPIs -->
+                <div class="kpi-grid">
+                    <div class="kpi-card" id="kpiDictamen">
+                        <div class="header">Dictamen</div>
+                        <div class="body">
+                            <div class="value" id="cDictamen">APTO</div>
+                            <div class="sub">Para el puesto</div>
+                        </div>
+                    </div>
+                    <div class="kpi-card" id="kpiDrogas">
+                        <div class="header">Panel Toxicológico (5)</div>
+                        <div class="body">
+                            <div class="value" id="cDrogas">NEGATIVO</div>
+                            <div class="sub">Estándar Minero</div>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="header">Grupo Sanguíneo</div>
+                        <div class="body">
+                            <div class="value" id="cSangre" style="color: var(--rojo);">---</div>
+                            <div class="sub">Confirmado</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Motivo NO APTO -->
+                <div class="cert-motivo" id="certMotivo">
+                    <h3>⚠️ Resultado: No Apto</h3>
+                    <div class="text"><strong>Motivo:</strong> <span id="cMotivo">---</span></div>
+                </div>
+
+                <!-- Permisos -->
+                <div class="section-title">Permisos de Riesgo</div>
+                <div class="permisos-grid">
+                    <div class="permiso-row">
+                        <div class="nombre">TRABAJO EN ALTURAS (>1.80m / NOM-009-STPS)<small>Requiere equilibrio y sin vértigo</small></div>
+                        <span class="permiso-tag" id="tagAlturas">AUTORIZADO</span>
+                        <div class="obs" id="obsAlturas">---</div>
+                    </div>
+                    <div class="permiso-row">
+                        <div class="nombre">ESPACIOS CONFINADOS (NOM-033-STPS)<small>Requiere función pulmonar óptima</small></div>
+                        <span class="permiso-tag" id="tagEspacios">AUTORIZADO</span>
+                        <div class="obs" id="obsEspacios">---</div>
+                    </div>
+                    <div class="permiso-row">
+                        <div class="nombre">OPERACIÓN EQUIPO MÓVIL<small>Requiere agudeza visual y auditiva</small></div>
+                        <span class="permiso-tag" id="tagEquipo">AUTORIZADO</span>
+                        <div class="obs" id="obsEquipo">---</div>
+                    </div>
+                    <div class="permiso-row">
+                        <div class="nombre">MANEJO DE CARGAS (NOM-006-STPS)<small>Requiere integridad musculoesquelética</small></div>
+                        <span class="permiso-tag" id="tagCargas">AUTORIZADO</span>
+                        <div class="obs" id="obsCargas">---</div>
+                    </div>
+                </div>
+
+                <!-- Resumen Clínico -->
+                <div class="section-title">Resumen Clínico</div>
+                <div class="clinical-grid">
+                    <div class="clinical-item">
+                        <strong>SIGNOS VITALES</strong>
+                        <span id="cSignos">---</span>
+                    </div>
+                    <div class="clinical-item">
+                        <strong>IMC</strong>
+                        <span id="cIMC">---</span>
+                    </div>
+                    <div class="clinical-item">
+                        <strong>AGUDEZA VISUAL</strong>
+                        <span id="cVisual">---</span>
+                    </div>
+                    <div class="clinical-item">
+                        <strong>AUDIOMETRÍA</strong>
+                        <span id="cAudio">---</span>
+                    </div>
+                    <div class="clinical-item">
+                        <strong>LABORATORIOS</strong>
+                        <span id="cLabs">NORMAL</span>
+                    </div>
+                    <div class="clinical-item">
+                        <strong>RADIOGRAFÍAS</strong>
+                        <span id="cRx">NORMAL</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="cert-footer">
+                <!-- Firma doble: Script + Antefirma formal -->
+                <div class="signature-single">
+                    <div class="sig-line"></div>
+                    <div class="sig-name-script" id="cFirmaScript">Dr. Tu Nombre</div>
+                    <div class="sig-name-formal" id="cFirmaFormal">DR. TU NOMBRE</div>
+                    <div class="sig-role">Médico Evaluador | Céd. Prof. <span id="cFirmaCedula">12345678</span></div>
+                </div>
+
+                <!-- Blindaje Legal -->
+                <div class="legal-blindaje">
+                    CERTIFICACIÓN DIGITAL: Este documento se emite mediante firma electrónica simple.
+                    Su validez y autenticidad se sustentan en el Expediente Clínico Fuente (NOM-004-SSA3-2012)
+                    que obra bajo resguardo de esta unidad médica, donde constan las firmas autógrafas
+                    de consentimiento informado y resultados originales.
+                </div>
+
+                <div class="doc-id">
+                    ID: <span id="docId">---</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// TEXTOS MÉDICOS POR DEFECTO (Afirmativos)
+// ═══════════════════════════════════════════
+const TEXTOS_DEFAULT = {
+    'Alturas': 'Sistema vestibular y cardiovascular íntegros',
+    'Espacios': 'Espirometría dentro de rangos normales',
+    'Equipo': 'Agudeza visual y auditiva sin alteraciones',
+    'Cargas': 'Sin limitación musculoesquelética'
+};
+
+const INPUT_MAP = {
+    'Alturas': 'obsAltInput',
+    'Espacios': 'obsEspInput',
+    'Equipo': 'obsEquInput',
+    'Cargas': 'obsCarInput'
+};
+
+const SELECT_MAP = {
+    'Alturas': 'pAlturas',
+    'Espacios': 'pEspacios',
+    'Equipo': 'pEquipo',
+    'Cargas': 'pCargas'
+};
+
+// ═══════════════════════════════════════════
+// INICIALIZACIÓN
+// ═══════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('fecha').value = new Date().toISOString().split('T')[0];
+
+    cargarConfig();
+
+    actualizarEstiloSelect('dictamen', 'APTO');
+    actualizarEstiloSelect('drogas', 'NEGATIVO');
+
+    actualizar();
+});
+
+// ═══════════════════════════════════════════
+// SMART MEMORY (localStorage)
+// ═══════════════════════════════════════════
+function guardarConfig() {
+    localStorage.setItem('sl_clinica', document.getElementById('cfgClinica').value);
+    localStorage.setItem('sl_medico', document.getElementById('cfgMedico').value);
+    localStorage.setItem('sl_cedula', document.getElementById('cfgCedula').value);
+}
+
+function cargarConfig() {
+    const clinica = localStorage.getItem('sl_clinica');
+    const medico = localStorage.getItem('sl_medico');
+    const cedula = localStorage.getItem('sl_cedula');
+    if (clinica) document.getElementById('cfgClinica').value = clinica;
+    if (medico) document.getElementById('cfgMedico').value = medico;
+    if (cedula) document.getElementById('cfgCedula').value = cedula;
+}
+
+// ═══════════════════════════════════════════
+// FUNCIONES AUXILIARES
+// ═══════════════════════════════════════════
+function formatearFecha(dateStr) {
+    if (!dateStr) return '--/--/----';
+    const d = new Date(dateStr + 'T12:00:00');
+    return d.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+function generarID() {
+    const now = new Date();
+    const timestamp = now.toISOString().replace(/[-:T]/g, '').slice(0, 14);
+    const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+    return `SL-${timestamp}-${random}`;
+}
+
+function actualizarEstiloSelect(id, valor) {
+    const el = document.getElementById(id);
+    el.classList.remove('apto', 'no-apto');
+    if (id === 'dictamen') {
+        el.classList.add(valor === 'APTO' ? 'apto' : 'no-apto');
+    } else if (id === 'drogas') {
+        el.classList.add(valor === 'NEGATIVO' ? 'apto' : 'no-apto');
+    }
+}
+
+// ═══════════════════════════════════════════
+// AUTO-CLEAN: VERIFICAR PERMISO
+// ═══════════════════════════════════════════
+function verificarPermiso(tipo) {
+    const valor = document.getElementById(SELECT_MAP[tipo]).value;
+    const inputObs = document.getElementById(INPUT_MAP[tipo]);
+
+    if (valor === 'RESTRINGIDO') {
+        inputObs.value = '';
+        inputObs.focus();
+    } else {
+        inputObs.value = TEXTOS_DEFAULT[tipo];
+    }
+
+    actualizar();
+}
+
+// ═══════════════════════════════════════════
+// CÁLCULO DE IMC
+// ═══════════════════════════════════════════
+function calcularIMC() {
+    const peso = parseFloat(document.getElementById('peso').value);
+    const talla = parseFloat(document.getElementById('talla').value);
+
+    if (peso && talla && talla > 0) {
+        const imc = (peso / (talla * talla)).toFixed(2);
+        document.getElementById('imc').value = imc;
+
+        let clasif = '';
+        const imcNum = parseFloat(imc);
+        if (imcNum < 18.5) clasif = 'Bajo Peso';
+        else if (imcNum < 25) clasif = 'Normal';
+        else if (imcNum < 30) clasif = 'Sobrepeso';
+        else clasif = 'Obesidad';
+
+        document.getElementById('imcClasif').value = clasif;
+    } else {
+        document.getElementById('imc').value = '';
+        document.getElementById('imcClasif').value = '';
+    }
+    actualizar();
+}
+
+// ═══════════════════════════════════════════
+// CAMBIO DE DICTAMEN / DROGAS
+// ═══════════════════════════════════════════
+function cambiarDictamen() {
+    const valor = document.getElementById('dictamen').value;
+    actualizarEstiloSelect('dictamen', valor);
+    document.getElementById('motivoContainer').classList.toggle('show', valor === 'NO APTO');
+    actualizar();
+}
+
+function cambiarDrogas() {
+    const valor = document.getElementById('drogas').value;
+    actualizarEstiloSelect('drogas', valor);
+    actualizar();
+}
+
+// ═══════════════════════════════════════════
+// ACTUALIZAR CERTIFICADO
+// ═══════════════════════════════════════════
+function actualizar() {
+    // Config -> Header + Footer
+    const clinica = document.getElementById('cfgClinica').value;
+    const medico = document.getElementById('cfgMedico').value;
+    const cedula = document.getElementById('cfgCedula').value;
+
+    document.getElementById('cClinica').textContent = (clinica || 'SERVICIO MÉDICO EMPRESARIAL').toUpperCase();
+    document.getElementById('cFirmaScript').textContent = medico || 'Dr. Tu Nombre';
+    document.getElementById('cFirmaFormal').textContent = (medico || 'DR. TU NOMBRE').toUpperCase();
+    document.getElementById('cFirmaCedula').textContent = cedula || '12345678';
+
+    // Fecha (solo emisión)
+    const fecha = document.getElementById('fecha').value;
+    document.getElementById('cFecha').textContent = formatearFecha(fecha);
+
+    // Datos trabajador
+    document.getElementById('cNombre').textContent = (document.getElementById('nombre').value || '---').toUpperCase();
+    document.getElementById('cPuesto').textContent = (document.getElementById('puesto').value || '---').toUpperCase();
+    document.getElementById('cEdad').textContent = document.getElementById('edad').value ? document.getElementById('edad').value + ' años' : '---';
+    document.getElementById('cEmpresa').textContent = (document.getElementById('empresa').value || '---').toUpperCase();
+
+    // Dictamen
+    const dictamen = document.getElementById('dictamen').value;
+    document.getElementById('cDictamen').textContent = dictamen;
+    const kpiDict = document.getElementById('kpiDictamen');
+    kpiDict.classList.remove('kpi-apto', 'kpi-no-apto');
+    kpiDict.classList.add(dictamen === 'APTO' ? 'kpi-apto' : 'kpi-no-apto');
+    document.getElementById('certificado').classList.toggle('no-apto-border', dictamen === 'NO APTO');
+    document.getElementById('certMotivo').classList.toggle('show', dictamen === 'NO APTO');
+    document.getElementById('cMotivo').textContent = document.getElementById('motivo').value || 'Sin especificar';
+
+    // Drogas
+    const drogas = document.getElementById('drogas').value;
+    document.getElementById('cDrogas').textContent = drogas;
+    const kpiDrogas = document.getElementById('kpiDrogas');
+    kpiDrogas.classList.remove('kpi-clean', 'kpi-positive');
+    kpiDrogas.classList.add(drogas === 'NEGATIVO' ? 'kpi-clean' : 'kpi-positive');
+
+    // Sangre
+    document.getElementById('cSangre').textContent = document.getElementById('sangre').value || '---';
+
+    // Permisos
+    actualizarPermiso('Alturas', document.getElementById('pAlturas').value);
+    actualizarPermiso('Espacios', document.getElementById('pEspacios').value);
+    actualizarPermiso('Equipo', document.getElementById('pEquipo').value);
+    actualizarPermiso('Cargas', document.getElementById('pCargas').value);
+
+    // Signos vitales
+    const ta = document.getElementById('ta').value || '---';
+    const fc = document.getElementById('fc').value || '---';
+    document.getElementById('cSignos').textContent = `T.A: ${ta} | F.C: ${fc}`;
+
+    // IMC
+    const imc = document.getElementById('imc').value;
+    const imcClasif = document.getElementById('imcClasif').value;
+    document.getElementById('cIMC').textContent = imc ? `${imc} (${imcClasif})` : '---';
+
+    // Visual y Audio
+    const visual = document.getElementById('visual').value || '---';
+    const daltonismo = document.getElementById('daltonismo').value;
+    document.getElementById('cVisual').textContent = `${visual} | Dalt: ${daltonismo}`;
+
+    const audio = document.getElementById('audio').value || '---';
+    const hipoacusia = document.getElementById('hipoacusia').value;
+    document.getElementById('cAudio').textContent = `${audio} | Hip: ${hipoacusia}`;
+
+    // Labs y Rx
+    document.getElementById('cLabs').textContent = document.getElementById('labs').value;
+    document.getElementById('cRx').textContent = document.getElementById('rx').value;
+
+    // ID
+    document.getElementById('docId').textContent = generarID();
+}
+
+function actualizarPermiso(nombre, valor) {
+    const tag = document.getElementById('tag' + nombre);
+    tag.textContent = valor;
+    tag.classList.remove('tag-autorizado', 'tag-restringido');
+    tag.classList.add(valor === 'AUTORIZADO' ? 'tag-autorizado' : 'tag-restringido');
+
+    const obsElement = document.getElementById('obs' + nombre);
+    const inputElement = document.getElementById(INPUT_MAP[nombre]);
+
+    if (inputElement) {
+        obsElement.textContent = inputElement.value || '---';
+        obsElement.style.color = valor === 'AUTORIZADO' ? 'var(--verde)' : 'var(--rojo)';
+    }
+}
+
+// ═══════════════════════════════════════════
+// DESCARGAR PDF
+// ═══════════════════════════════════════════
+async function descargarPDF() {
+    const nombre = document.getElementById('nombre').value;
+    if (!nombre) {
+        alert('⚠️ Ingrese el NOMBRE del trabajador');
+        document.getElementById('nombre').focus();
+        return;
+    }
+
+    const btn = document.getElementById('btnPDF');
+    btn.disabled = true;
+    btn.textContent = '⏳ Generando...';
+
+    const idFinal = generarID();
+    document.getElementById('docId').textContent = idFinal;
+
+    try {
+        const elemento = document.getElementById('certificado');
+
+        const canvas = await html2canvas(elemento, {
+            scale: 2,
+            useCORS: true,
+            backgroundColor: '#ffffff',
+            logging: false,
+            windowWidth: elemento.scrollWidth,
+            windowHeight: elemento.scrollHeight
+        });
+
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'letter');
+
+        const imgWidth = 216 - 20;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+        pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 10, 10, imgWidth, imgHeight);
+
+        const nombreArchivo = `CERT_${nombre.split(' ')[0].toUpperCase()}_${new Date().toISOString().slice(0,10)}.pdf`;
+        pdf.save(nombreArchivo);
+
+        mostrarToast('PDF descargado: ' + nombreArchivo);
+
+    } catch (err) {
+        console.error(err);
+        alert('Error al generar PDF');
+    }
+
+    btn.disabled = false;
+    btn.textContent = '📥 DESCARGAR PDF';
+}
+
+// ═══════════════════════════════════════════
+// SIGUIENTE PACIENTE (NO borra configuración)
+// ═══════════════════════════════════════════
+function siguiente() {
+    if (!confirm('¿Limpiar datos para el siguiente paciente?')) return;
+
+    ['nombre', 'puesto', 'edad', 'empresa', 'ta', 'fc', 'peso', 'talla', 'motivo'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+
+    document.getElementById('imc').value = '';
+    document.getElementById('imcClasif').value = '';
+
+    document.getElementById('dictamen').value = 'APTO';
+    document.getElementById('drogas').value = 'NEGATIVO';
+    document.getElementById('sangre').selectedIndex = 0;
+    document.getElementById('pAlturas').value = 'AUTORIZADO';
+    document.getElementById('pEspacios').value = 'AUTORIZADO';
+    document.getElementById('pEquipo').value = 'AUTORIZADO';
+    document.getElementById('pCargas').value = 'AUTORIZADO';
+    document.getElementById('visual').value = '20/20';
+    document.getElementById('daltonismo').value = 'NEG';
+    document.getElementById('audio').value = 'Normal';
+    document.getElementById('hipoacusia').value = 'NO';
+    document.getElementById('labs').value = 'NORMAL';
+    document.getElementById('rx').value = 'NORMAL';
+
+    // Restaurar textos médicos afirmativos
+    document.getElementById('obsAltInput').value = TEXTOS_DEFAULT['Alturas'];
+    document.getElementById('obsEspInput').value = TEXTOS_DEFAULT['Espacios'];
+    document.getElementById('obsEquInput').value = TEXTOS_DEFAULT['Equipo'];
+    document.getElementById('obsCarInput').value = TEXTOS_DEFAULT['Cargas'];
+
+    actualizarEstiloSelect('dictamen', 'APTO');
+    actualizarEstiloSelect('drogas', 'NEGATIVO');
+    document.getElementById('motivoContainer').classList.remove('show');
+
+    // cfgClinica, cfgMedico, cfgCedula -> INTACTOS
+
+    actualizar();
+    document.getElementById('nombre').focus();
+}
+
+// ═══════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════
+function mostrarToast(msg) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 3000);
+}
+</script>
+
+</body>
+</html>
